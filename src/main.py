@@ -7,12 +7,12 @@ class Pydoku:
             raise ValueError("Grid string must be 81 characters long")
 
         self.grid_str = grid_str
-        self.initial_grid = self.grid_values()
         self.values = []
         self.rows = "ABCDEFGHI"
         self.columns = "123456789"
         self.boxes = self.cross(self.rows, self.columns)
-        self.grid = self.grid_values(add_possible_values=True)
+        self.initial_grid = {box: value for box, value in zip(self.boxes, self.grid_str)}
+        self.grid = self.grid_values()
         """
         Boxes:
 
@@ -75,15 +75,11 @@ class Pydoku:
                 print(line)
         print()
 
-    def grid_values(self, add_possible_values: bool = False):
-        if add_possible_values:
-            for c in self.grid_str:
-                if c == ".":
-                    self.values.append("123456789")
-                else:
-                    self.values.append(c)
-        else:
-            for c in self.grid_str:
+    def grid_values(self):
+        for c in self.grid_str:
+            if c == ".":
+                self.values.append("123456789")
+            else:
                 self.values.append(c)
 
         return {box: value for box, value in zip(self.boxes, self.values)}
