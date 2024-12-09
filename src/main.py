@@ -67,7 +67,7 @@ class Pydoku:
         ----------
             values(dict): The sudoku in dictionary form
         """
-        width = 1 + max(len(self.grid[s]) for s in self.boxes)
+        width = 1 + max(len(grid[s]) for s in self.boxes)
         line = "+".join(["-" * (width * 3)] * 3)
         for r in self.rows:
             print("".join(grid[r + c].center(width) + ("|" if c in "36" else "") for c in self.columns))
@@ -84,54 +84,75 @@ class Pydoku:
 
         return {box: value for box, value in zip(self.boxes, self.values)}
 
-    def elimitate(self):
-        solved_values = [box for box in self.grid.keys() if len(self.grid[box]) == 1]
+    def elimitate(self, grid):
+        solved_values = [box for box in grid.keys() if len(grid[box]) == 1]
 
         for box in solved_values:
-            digit = self.grid[box]
+            digit = grid[box]
             for peer in self.peers[box]:
-                self.grid[peer] = self.grid[peer].replace(digit, "")
+                grid[peer] = grid[peer].replace(digit, "")
 
-        return self.grid
+        return grid
 
-    def only_choice(self):
+    def only_choice(self, grid):
         for unit in self.unitlist:
             for digit in "123456789":
-                dplaces = [box for box in unit if digit in self.grid[box]]
+                dplaces = [box for box in unit if digit in grid[box]]
                 if len(dplaces) == 1:
-                    self.grid[dplaces[0]] = digit
-        return self.grid
+                    grid[dplaces[0]] = digit
+        return grid
 
-    def reduce(self):
+    def reduce(self, grid):
         stalled = False
         while not stalled:
             # Check how many boxes have a determined value
-            solved_values_before = len([box for box in self.grid.keys() if len(self.grid[box]) == 1])
+            solved_values_before = len([box for box in grid.keys() if len(grid[box]) == 1])
 
             # Eliminate Strategy
-            self.elimitate()
+            self.elimitate(grid)
 
             # Only Choice Strategy
-            self.only_choice()
+            self.only_choice(grid)
 
             # Check how many boxes have a determined value, to compare
-            solved_values_after = len([box for box in self.grid.keys() if len(self.grid[box]) == 1])
+            solved_values_after = len([box for box in grid.keys() if len(grid[box]) == 1])
             # If no new values were added, stop the loop.
             stalled = solved_values_before == solved_values_after
             # Sanity check, return False if there is a box with zero available values:
-            if len([box for box in self.grid.keys() if len(self.grid[box]) == 0]):
+            if len([box for box in grid.keys() if len(grid[box]) == 0]):
                 return False
-        return self.grid
+
+        return grid
+
+    def search(self, grid):
+        # First, reduce the puzzle using the previous function
+        values = self.reduce(grid)
+
+        if values is False:
+            return False  ## Failed earlier
+
+        if all(len(values[s]) == 1 for s in self.boxes):
+            return values  ## Solved!
+        # Choose one of the unfilled squares with the fewest possibilities
+        n, s = min((len(values[s]), s) for s in self.boxes if len(values[s]) > 1)
+        # Now use recurrence to solve each one of the resulting sudokus, and
+        for value in values[s]:
+            new_sudoku = values.copy()
+            new_sudoku[s] = value
+            attempt = self.search(new_sudoku)
+            if attempt:
+                return attempt
 
     def solve(self):
         print("Initial grid:")
         self.display(self.initial_grid)
-        self.reduce()
+        self.grid = self.search(self.grid)
         print("Solved grid:")
         self.display(self.grid)
 
 
 if __name__ == "__main__":
-    grid_str = "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
-    pydoku = Pydoku(grid_str)
+    # grid = "..3.2.6..9..3.5..1..18.64....81.29..7.......8..67.82....26.95..8..2.3..9..5.1.3.."
+    grid2 = "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......"
+    pydoku = Pydoku(grid2)
     pydoku.solve()
